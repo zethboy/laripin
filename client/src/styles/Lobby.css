@@ -1,0 +1,190 @@
+.lobby-page {
+  min-height: 100vh;
+  background: var(--bg-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+}
+
+.lobby-container {
+  width: 100%;
+  max-width: 520px;
+  animation: slide-up 0.4s ease-out;
+}
+
+.lobby-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+}
+
+.lobby-title {
+  font-family: var(--font-game);
+  font-size: 1.2rem;
+  color: var(--text-primary);
+  text-shadow: var(--glow-purple);
+  letter-spacing: 3px;
+}
+
+.leave-btn { padding: 0.4rem 1rem; font-size: 0.8rem; }
+
+.room-code-card {
+  background: var(--bg-card);
+  border: 1px solid rgba(124,58,237,0.4);
+  border-radius: 14px;
+  padding: 1.5rem;
+  text-align: center;
+  margin-bottom: 1.25rem;
+  box-shadow: var(--glow-purple);
+}
+
+.room-code-label {
+  font-family: var(--font-game);
+  font-size: 0.5rem;
+  color: var(--text-secondary);
+  letter-spacing: 2px;
+  margin-bottom: 0.75rem;
+}
+
+.room-code-display {
+  font-family: var(--font-game);
+  font-size: clamp(2rem, 8vw, 3rem);
+  color: var(--accent-yellow);
+  text-shadow: 0 0 20px rgba(255,215,0,0.7);
+  letter-spacing: 8px;
+  margin-bottom: 1rem;
+}
+
+.copy-btn { font-size: 0.85rem; padding: 0.5rem 1.5rem; }
+
+.players-section {
+  background: var(--bg-card);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 14px;
+  padding: 1.25rem;
+  margin-bottom: 1.25rem;
+}
+
+.players-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.section-label {
+  font-family: var(--font-game);
+  font-size: 0.55rem;
+  color: var(--text-secondary);
+  letter-spacing: 2px;
+}
+
+.player-count {
+  font-family: var(--font-game);
+  font-size: 0.55rem;
+  color: var(--accent-purple);
+}
+
+.players-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.player-card {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: var(--bg-secondary);
+  border: 1px solid rgba(255,255,255,0.05);
+  border-radius: 10px;
+  padding: 0.6rem 1rem;
+  transition: border-color 0.2s;
+}
+
+.player-card.is-me {
+  border-color: rgba(255,215,0,0.4);
+  background: rgba(255,215,0,0.04);
+}
+
+.player-card.empty {
+  opacity: 0.3;
+  justify-content: center;
+}
+
+.player-emoji { font-size: 1.75rem; }
+
+.player-info {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.player-username {
+  font-family: var(--font-ui);
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.host-badge {
+  font-family: var(--font-game);
+  font-size: 0.45rem;
+  background: var(--accent-purple);
+  color: white;
+  padding: 2px 6px;
+  border-radius: 4px;
+  letter-spacing: 1px;
+}
+
+.player-ready-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--accent-benar);
+  box-shadow: 0 0 8px rgba(0,255,135,0.8);
+}
+
+.empty-slot {
+  font-family: var(--font-ui);
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.start-btn {
+  width: 100%;
+  font-size: 1.1rem;
+  padding: 1rem;
+}
+
+.waiting-msg {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 1rem;
+  color: var(--text-secondary);
+  font-family: var(--font-ui);
+  font-size: 0.95rem;
+}
+
+.waiting-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--accent-purple);
+  animation: blink 1s ease-in-out infinite;
+}
+
+.error-msg {
+  margin-bottom: 1rem;
+  padding: 0.6rem 1rem;
+  background: rgba(255,71,87,0.1);
+  border: 1px solid rgba(255,71,87,0.3);
+  border-radius: 8px;
+  color: var(--accent-salah);
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-align: center;
+}
