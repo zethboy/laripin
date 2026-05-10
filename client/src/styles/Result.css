@@ -1,3 +1,7 @@
+/* ============================================================
+   Result.css — Game Over / Leaderboard screen
+   ============================================================ */
+
 .result-page {
   min-height: 100vh;
   background: var(--bg-primary);
@@ -5,14 +9,29 @@
   align-items: center;
   justify-content: center;
   padding: 1.5rem;
+  position: relative;
+  overflow: hidden;
 }
 
 .result-container {
+  position: relative;
+  z-index: 2;
   width: 100%;
   max-width: 520px;
   animation: slide-up 0.5s ease-out;
 }
 
+/* ── Confetti canvas ── */
+.confetti-canvas {
+  position: fixed;
+  inset: 0;
+  z-index: 1;   /* below result-container (z-index: 2) */
+  pointer-events: none;
+  width: 100%;
+  height: 100%;
+}
+
+/* ── Title ── */
 .result-title {
   font-family: var(--font-game);
   font-size: clamp(1.5rem, 6vw, 2.5rem);
@@ -23,7 +42,9 @@
   margin-bottom: 2rem;
 }
 
-/* Podium */
+/* ============================================================
+   Podium
+   ============================================================ */
 .podium-wrap {
   display: flex;
   align-items: flex-end;
@@ -104,7 +125,9 @@
   color: var(--accent-yellow);
 }
 
-/* Leaderboard */
+/* ============================================================
+   Leaderboard (4th place+)
+   ============================================================ */
 .lb-card {
   background: var(--bg-card);
   border: 1px solid rgba(255,255,255,0.07);
@@ -152,8 +175,47 @@
   color: var(--accent-benar);
 }
 
+/* ============================================================
+   Action buttons
+   ============================================================ */
+.result-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
 .play-again-btn {
   width: 100%;
   font-size: 1rem;
   padding: 1rem;
+}
+
+.back-menu-btn {
+  width: 100%;
+  font-size: 0.85rem;
+  padding: 0.75rem;
+  opacity: 0.8;
+}
+
+.back-menu-btn:hover { opacity: 1; }
+
+/* ============================================================
+   Mobile responsive
+   ============================================================ */
+@media (max-width: 480px) {
+  .result-title { margin-bottom: 1.25rem; }
+
+  .podium-wrap { gap: 0.3rem; }
+
+  .podium-emoji { font-size: 2rem; }
+
+  .podium-name {
+    font-size: 0.7rem;
+    max-width: 90px;
+  }
+
+  .result-actions { gap: 0.5rem; }
+
+  .play-again-btn { font-size: 0.85rem; padding: 0.9rem; }
+  .back-menu-btn  { font-size: 0.75rem; }
 }

@@ -1,0 +1,326 @@
+/* ============================================================
+   Login.css — LARIPIN Splash / Welcome Screen
+   Theme: dark esports + retro neon
+   ============================================================ */
+
+/* ── Page wrapper ── */
+.login-page {
+  min-height: 100vh;
+  background: var(--bg-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+/* ── Enter / Exit transitions ── */
+.login-enter {
+  animation: loginEnter 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.login-exit {
+  animation: loginExit 0.4s ease-in both;
+}
+
+@keyframes loginEnter {
+  from { opacity: 0; transform: scale(1.04) translateY(12px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+@keyframes loginExit {
+  from { opacity: 1; transform: scale(1) translateY(0); }
+  to   { opacity: 0; transform: scale(0.96) translateY(-12px); }
+}
+
+/* ── Grid dot background ── */
+.login-grid-bg {
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(circle at 1px 1px, rgba(124,58,237,0.18) 1px, transparent 0);
+  background-size: 32px 32px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Corner radial vignette on top of grid */
+.login-grid-bg::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, transparent 40%, var(--bg-primary) 100%);
+}
+
+/* ── Scanline animation ── */
+.login-scanline {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: 4px;
+  background: linear-gradient(transparent, rgba(124,58,237,0.4), transparent);
+  animation: scanline 5s linear infinite;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* ── Background running characters ── */
+.login-runners {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.login-runner {
+  position: absolute;
+  left: -120px;
+  opacity: 0;
+  animation: float-bg 8s linear infinite;
+  filter: blur(0.5px);
+  will-change: transform;
+}
+
+/* ── Centre content ── */
+.login-center {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  padding: 2rem 1.5rem;
+  text-align: center;
+  max-width: 560px;
+  width: 100%;
+}
+
+/* ── Badge ── */
+.login-badge {
+  font-family: var(--font-game);
+  font-size: 0.45rem;
+  letter-spacing: 3px;
+  color: var(--accent-purple);
+  background: rgba(124,58,237,0.12);
+  border: 1px solid rgba(124,58,237,0.35);
+  border-radius: 999px;
+  padding: 5px 18px;
+  margin-bottom: 1.5rem;
+  animation: pulse-glow 3s ease-in-out infinite;
+  text-transform: uppercase;
+}
+
+/* ── Animated title letters ── */
+.login-title {
+  font-family: var(--font-game);
+  font-size: clamp(3rem, 14vw, 6.5rem);
+  letter-spacing: 6px;
+  line-height: 1;
+  margin-bottom: 1.25rem;
+  display: flex;
+  gap: 0.05em;
+  user-select: none;
+}
+
+.login-letter {
+  display: inline-block;
+  color: var(--text-primary);
+  text-shadow:
+    0 0 15px rgba(124,58,237,0.9),
+    0 0 35px rgba(124,58,237,0.5),
+    0 0 70px rgba(124,58,237,0.25);
+  animation: letterFloat 3s ease-in-out infinite;
+  transition: color 0.1s, text-shadow 0.1s;
+}
+
+/* Individual letter float offsets so they ripple */
+.login-letter:nth-child(1) { animation-delay: 0.00s; }
+.login-letter:nth-child(2) { animation-delay: 0.10s; }
+.login-letter:nth-child(3) { animation-delay: 0.20s; }
+.login-letter:nth-child(4) { animation-delay: 0.30s; }
+.login-letter:nth-child(5) { animation-delay: 0.40s; }
+.login-letter:nth-child(6) { animation-delay: 0.50s; }
+.login-letter:nth-child(7) { animation-delay: 0.60s; }
+
+/* Active shimmer letter */
+.login-letter.shimmer {
+  color: var(--accent-yellow);
+  text-shadow:
+    0 0 20px rgba(255,215,0,1),
+    0 0 50px rgba(255,215,0,0.7),
+    0 0 90px rgba(255,215,0,0.4);
+  transform: translateY(-6px) scale(1.12);
+}
+
+@keyframes letterFloat {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-5px); }
+}
+
+/* ── Tagline ── */
+.login-tagline {
+  font-family: var(--font-ui);
+  font-size: clamp(1rem, 3vw, 1.25rem);
+  font-weight: 500;
+  color: var(--text-secondary);
+  letter-spacing: 0.5px;
+  margin-bottom: 1.75rem;
+}
+
+.login-tagline-highlight {
+  color: var(--accent-benar);
+  font-weight: 700;
+  text-shadow: 0 0 12px rgba(0,255,135,0.5);
+}
+
+/* ── Divider ── */
+.login-divider {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  max-width: 320px;
+  margin-bottom: 1.25rem;
+}
+
+.login-divider span:not(.login-divider-icon) {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(to right, transparent, rgba(124,58,237,0.4), transparent);
+}
+
+.login-divider-icon {
+  font-size: 1.2rem;
+  animation: idle 1.5s ease-in-out infinite;
+}
+
+/* ── Feature pills ── */
+.login-features {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-bottom: 2rem;
+}
+
+.login-pill {
+  font-family: var(--font-ui);
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: var(--bg-card);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 999px;
+  padding: 5px 14px;
+  letter-spacing: 0.5px;
+  transition: all 0.2s;
+}
+
+.login-pill:hover {
+  border-color: rgba(124,58,237,0.5);
+  color: var(--text-primary);
+}
+
+/* ── PLAY NOW button ── */
+.login-play-btn {
+  position: relative;
+  font-family: var(--font-game);
+  font-size: clamp(0.75rem, 2.5vw, 0.95rem);
+  letter-spacing: 3px;
+  color: var(--bg-primary);
+  background: linear-gradient(135deg, #7c3aed, #a855f7, #7c3aed);
+  background-size: 200% 200%;
+  border: none;
+  border-radius: 12px;
+  padding: 1.1rem 3.5rem;
+  cursor: pointer;
+  overflow: hidden;
+  transition: transform 0.15s, box-shadow 0.2s;
+  box-shadow:
+    0 0 30px rgba(124,58,237,0.6),
+    0 4px 20px rgba(0,0,0,0.4);
+  animation: btnGradientShift 3s ease-in-out infinite, btnPulse 2.5s ease-in-out infinite;
+  margin-bottom: 1.25rem;
+  min-height: 56px; /* mobile tap target */
+}
+
+.login-play-btn:hover {
+  transform: translateY(-3px) scale(1.03);
+  box-shadow:
+    0 0 50px rgba(124,58,237,0.9),
+    0 8px 30px rgba(0,0,0,0.5);
+}
+
+.login-play-btn:active {
+  transform: translateY(0) scale(0.97);
+}
+
+/* Sweeping shine */
+.login-play-btn-glow {
+  position: absolute;
+  top: 0; left: -75%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent);
+  animation: btnShine 2.5s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.login-play-btn-text {
+  position: relative;
+  z-index: 1;
+  color: white;
+  font-size: inherit;
+}
+
+@keyframes btnGradientShift {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes btnPulse {
+  0%, 100% { box-shadow: 0 0 30px rgba(124,58,237,0.6), 0 4px 20px rgba(0,0,0,0.4); }
+  50%       { box-shadow: 0 0 55px rgba(124,58,237,0.95), 0 4px 20px rgba(0,0,0,0.4); }
+}
+
+@keyframes btnShine {
+  0%   { left: -75%; }
+  60%  { left: 125%; }
+  100% { left: 125%; }
+}
+
+/* ── Footer note ── */
+.login-footer {
+  font-family: var(--font-ui);
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  opacity: 0.6;
+  letter-spacing: 0.3px;
+}
+
+/* ── Corner bracket decorations ── */
+.login-corner {
+  position: absolute;
+  width: 28px;
+  height: 28px;
+  border-color: rgba(124,58,237,0.4);
+  border-style: solid;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.login-corner-tl { top: 20px; left: 20px;  border-width: 2px 0 0 2px; }
+.login-corner-tr { top: 20px; right: 20px; border-width: 2px 2px 0 0; }
+.login-corner-bl { bottom: 20px; left: 20px;  border-width: 0 0 2px 2px; }
+.login-corner-br { bottom: 20px; right: 20px; border-width: 0 2px 2px 0; }
+
+/* ── Mobile responsive ── */
+@media (max-width: 480px) {
+  .login-title { font-size: clamp(2.5rem, 18vw, 3.5rem); letter-spacing: 3px; }
+  .login-badge { font-size: 0.4rem; letter-spacing: 2px; padding: 4px 12px; }
+  .login-play-btn { padding: 1rem 2.5rem; }
+  .login-corner { width: 18px; height: 18px; top: 12px; left: 12px; }
+  .login-corner-tr { top: 12px; left: auto; right: 12px; }
+  .login-corner-bl { top: auto; bottom: 12px; left: 12px; }
+  .login-corner-br { top: auto; bottom: 12px; right: 12px; left: auto; }
+}

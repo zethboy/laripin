@@ -66,7 +66,11 @@ module.exports = function setupGameHandlers(io) {
 
       socket.join(roomCode);
       socket.emit('room_joined', { roomCode });
-      io.to(roomCode).emit('room_update', getRoomSafeState(room));
+      // BUG 2 FIX: delay room_update by 300ms so Player B's Lobby page
+      // has time to mount and register the room_update listener before it fires.
+      setTimeout(() => {
+        io.to(roomCode).emit('room_update', getRoomSafeState(room));
+      }, 300);
     });
 
     // START GAME
@@ -78,7 +82,11 @@ module.exports = function setupGameHandlers(io) {
 
       room.status = 'playing';
       room.currentQuestionIndex = 0;
-      sendQuestion(io, room);
+      // BUG 1 FIX: delay first question by 800ms so all clients finish
+      // transitioning from Lobby → Game and register their socket listeners.
+      setTimeout(() => {
+        sendQuestion(io, room);
+      }, 800);
     });
 
     // PLAYER ANSWER
@@ -101,12 +109,10 @@ module.exports = function setupGameHandlers(io) {
         choseLane: player.choseLane,
       });
 
-      // Check if all players answered
-      const allAnswered = room.players.every(p => p.answered);
-      if (allAnswered) {
-        clearTimeout(room.timer);
-        resolveQuestion(io, room);
-      }
+      // BUG 3 FIX: do NOT resolve early when all players answer.
+      // Let the 10-second timer run to completion naturally so the
+      // correct answer is only revealed when time is up (Kahoot-style).
+      // player_moved already broadcast lane movement above — that's enough.
     });
 
     // DISCONNECT

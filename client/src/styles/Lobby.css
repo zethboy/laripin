@@ -1,3 +1,7 @@
+/* ============================================================
+   Lobby.css — Waiting room
+   ============================================================ */
+
 .lobby-page {
   min-height: 100vh;
   background: var(--bg-primary);
@@ -13,6 +17,7 @@
   animation: slide-up 0.4s ease-out;
 }
 
+/* ── Header ── */
 .lobby-header {
   display: flex;
   align-items: center;
@@ -30,6 +35,9 @@
 
 .leave-btn { padding: 0.4rem 1rem; font-size: 0.8rem; }
 
+/* ============================================================
+   Room code card — prominent + pulsing neon glow
+   ============================================================ */
 .room-code-card {
   background: var(--bg-card);
   border: 1px solid rgba(124,58,237,0.4);
@@ -38,6 +46,18 @@
   text-align: center;
   margin-bottom: 1.25rem;
   box-shadow: var(--glow-purple);
+  /* Extra emphasis: subtle inset shine */
+  position: relative;
+  overflow: hidden;
+}
+
+/* Top-edge shimmer */
+.room-code-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(124,58,237,0.6), transparent);
 }
 
 .room-code-label {
@@ -48,17 +68,71 @@
   margin-bottom: 0.75rem;
 }
 
-.room-code-display {
-  font-family: var(--font-game);
-  font-size: clamp(2rem, 8vw, 3rem);
-  color: var(--accent-yellow);
-  text-shadow: 0 0 20px rgba(255,215,0,0.7);
-  letter-spacing: 8px;
+/* ── Room code tiles — each letter gets its own glowing box ── */
+.room-code-tiles {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
   margin-bottom: 1rem;
+  flex-wrap: wrap;
 }
 
-.copy-btn { font-size: 0.85rem; padding: 0.5rem 1.5rem; }
+.room-code-tile {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-game);
+  font-size: clamp(1.4rem, 5vw, 2rem);
+  color: var(--accent-yellow);
+  background: var(--bg-secondary);
+  border: 1px solid rgba(255, 215, 0, 0.3);
+  border-radius: 10px;
+  width: clamp(2.4rem, 8vw, 3.2rem);
+  height: clamp(2.8rem, 9vw, 3.6rem);
+  /* Staggered pulse — delay set via inline style */
+  animation: tilePulse 2.2s ease-in-out infinite;
+  transition: box-shadow 0.2s;
+}
 
+@keyframes tilePulse {
+  0%, 100% {
+    box-shadow:
+      0 0 8px rgba(255, 215, 0, 0.35),
+      inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 215, 0, 0.3);
+  }
+  50% {
+    box-shadow:
+      0 0 22px rgba(255, 215, 0, 0.8),
+      0 0 45px rgba(255, 215, 0, 0.35),
+      inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 215, 0, 0.7);
+  }
+}
+
+.copy-btn {
+  font-size: 0.85rem;
+  padding: 0.5rem 1.5rem;
+  transition: all 0.15s;
+}
+
+/* Click flash animation */
+.copy-btn--copied {
+  background: rgba(0, 255, 135, 0.15) !important;
+  border-color: var(--accent-benar) !important;
+  color: var(--accent-benar) !important;
+  animation: copyFlash 0.3s ease-out;
+}
+
+@keyframes copyFlash {
+  0%   { transform: scale(0.94); }
+  60%  { transform: scale(1.04); }
+  100% { transform: scale(1); }
+}
+
+/* ============================================================
+   Players section
+   ============================================================ */
 .players-section {
   background: var(--bg-card);
   border: 1px solid rgba(255,255,255,0.07);
@@ -93,6 +167,7 @@
   gap: 0.5rem;
 }
 
+/* ── Filled player card ── */
 .player-card {
   display: flex;
   align-items: center;
@@ -107,11 +182,6 @@
 .player-card.is-me {
   border-color: rgba(255,215,0,0.4);
   background: rgba(255,215,0,0.04);
-}
-
-.player-card.empty {
-  opacity: 0.3;
-  justify-content: center;
 }
 
 .player-emoji { font-size: 1.75rem; }
@@ -147,12 +217,59 @@
   box-shadow: 0 0 8px rgba(0,255,135,0.8);
 }
 
-.empty-slot {
-  font-family: var(--font-ui);
-  font-size: 0.85rem;
-  color: var(--text-secondary);
+/* ============================================================
+   Ghost / Empty slot
+   ============================================================ */
+.ghost-slot {
+  border-style: dashed !important;
+  border-color: rgba(255,255,255,0.1) !important;
+  background: rgba(255,255,255,0.02) !important;
+  opacity: 0.55;
+  justify-content: flex-start;
 }
 
+.ghost-icon {
+  font-size: 1.4rem;
+  filter: grayscale(0.6);
+  opacity: 0.5;
+}
+
+.ghost-text {
+  font-family: var(--font-ui);
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  font-style: italic;
+}
+
+/* Animated dots for "Menunggu..." */
+.ghost-dots {
+  display: inline-flex;
+  gap: 2px;
+  margin-left: 2px;
+}
+
+.ghost-dot {
+  display: inline-block;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--text-secondary);
+  opacity: 0.5;
+  animation: ghostDotBounce 1.2s ease-in-out infinite;
+}
+
+@keyframes ghostDotBounce {
+  0%, 100% { transform: translateY(0); opacity: 0.3; }
+  50%       { transform: translateY(-4px); opacity: 0.9; }
+}
+
+/* ============================================================
+   Start / Waiting
+   ============================================================ */
 .start-btn {
   width: 100%;
   font-size: 1.1rem;
@@ -187,4 +304,25 @@
   font-size: 0.85rem;
   font-weight: 600;
   text-align: center;
+}
+
+/* ============================================================
+   Mobile responsive
+   ============================================================ */
+@media (max-width: 480px) {
+  .lobby-page { padding: 1rem; align-items: flex-start; }
+
+  /* Smaller tile size on narrow screens */
+  .room-code-tiles { gap: 0.35rem; }
+
+  .room-code-tile {
+    width: clamp(2rem, 12vw, 2.6rem);
+    height: clamp(2.4rem, 14vw, 3rem);
+    font-size: clamp(1.1rem, 6vw, 1.6rem);
+    border-radius: 8px;
+  }
+
+  .player-username { font-size: 0.85rem; }
+
+  .start-btn { font-size: 0.95rem; }
 }

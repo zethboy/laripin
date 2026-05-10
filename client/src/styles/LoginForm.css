@@ -1,0 +1,373 @@
+/* ============================================================
+   LoginForm.css — Cosmetic login page (no real auth)
+   Theme: dark esports + retro neon, consistent with App.css
+   ============================================================ */
+
+/* ── Page wrapper ── */
+.lf-page {
+  min-height: 100vh;
+  background: var(--bg-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  padding: 1.5rem;
+  /* Fade-in on mount (page-in class from App.css applies globally) */
+}
+
+/* ── Grid dot background — same as Login.jsx ── */
+.lf-grid-bg {
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(circle at 1px 1px, rgba(124, 58, 237, 0.15) 1px, transparent 0);
+  background-size: 32px 32px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.lf-grid-bg::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, transparent 40%, var(--bg-primary) 100%);
+}
+
+/* ── Corner bracket decorations ── */
+.lf-corner {
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  border-color: rgba(124, 58, 237, 0.35);
+  border-style: solid;
+  pointer-events: none;
+  z-index: 2;
+}
+.lf-corner-tl { top: 20px; left: 20px;   border-width: 2px 0 0 2px; }
+.lf-corner-tr { top: 20px; right: 20px;  border-width: 2px 2px 0 0; }
+.lf-corner-bl { bottom: 20px; left: 20px;  border-width: 0 0 2px 2px; }
+.lf-corner-br { bottom: 20px; right: 20px; border-width: 0 2px 2px 0; }
+
+/* ── Center card ── */
+.lf-card {
+  position: relative;
+  z-index: 10;
+  width: 100%;
+  max-width: 420px;
+  background: var(--bg-card);
+  border: 1px solid rgba(124, 58, 237, 0.35);
+  border-radius: 20px;
+  padding: 2.25rem 2rem 1.75rem;
+  box-shadow:
+    0 0 40px rgba(124, 58, 237, 0.2),
+    0 20px 60px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  animation: lfCardIn 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* Top shimmer line */
+.lf-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  border-radius: 20px 20px 0 0;
+  background: linear-gradient(90deg, transparent, rgba(124, 58, 237, 0.7), transparent);
+}
+
+@keyframes lfCardIn {
+  from { opacity: 0; transform: translateY(24px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ── Mini logo ── */
+.lf-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-bottom: 1.75rem;
+}
+
+.lf-logo-text {
+  font-family: var(--font-game);
+  font-size: 0.85rem;
+  letter-spacing: 4px;
+  color: var(--text-primary);
+  text-shadow:
+    0 0 12px rgba(124, 58, 237, 0.9),
+    0 0 28px rgba(124, 58, 237, 0.5);
+}
+
+.lf-logo-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent-purple);
+  box-shadow: 0 0 8px rgba(124, 58, 237, 0.9);
+  animation: blink 1.5s ease-in-out infinite;
+}
+
+/* ── Welcome heading ── */
+.lf-welcome {
+  text-align: center;
+  margin-bottom: 1.75rem;
+}
+
+.lf-title {
+  font-family: var(--font-ui);
+  font-size: clamp(1.5rem, 5vw, 1.9rem);
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: 0.5px;
+  margin-bottom: 0.4rem;
+}
+
+.lf-subtitle {
+  font-family: var(--font-ui);
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  letter-spacing: 0.3px;
+}
+
+/* ============================================================
+   Buttons
+   ============================================================ */
+
+/* Base button reset */
+.lf-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  font-family: var(--font-ui);
+  font-weight: 700;
+  letter-spacing: 1px;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-transform: uppercase;
+}
+
+/* ── ENTER AS GUEST — main CTA ── */
+.lf-btn-guest {
+  background: linear-gradient(135deg, #7c3aed, #9d55f5);
+  color: #fff;
+  font-size: 1rem;
+  padding: 1rem 1.5rem;
+  min-height: 56px;
+  box-shadow:
+    0 0 25px rgba(124, 58, 237, 0.5),
+    0 4px 15px rgba(0, 0, 0, 0.3);
+  margin-bottom: 1.5rem;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Shine sweep on the guest button */
+.lf-btn-guest::before {
+  content: '';
+  position: absolute;
+  top: 0; left: -70%;
+  width: 45%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  animation: lfBtnShine 2.5s ease-in-out infinite;
+}
+
+@keyframes lfBtnShine {
+  0%   { left: -70%; }
+  60%  { left: 120%; }
+  100% { left: 120%; }
+}
+
+.lf-btn-guest:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 0 40px rgba(124, 58, 237, 0.8),
+    0 6px 20px rgba(0, 0, 0, 0.4);
+}
+
+.lf-btn-guest:active {
+  transform: scale(0.97) translateY(0);
+}
+
+.lf-btn-icon {
+  font-size: 1.2rem;
+}
+
+.lf-btn-arrow {
+  margin-left: auto;
+  font-size: 1.1rem;
+  transition: transform 0.2s;
+}
+
+.lf-btn-guest:hover .lf-btn-arrow {
+  transform: translateX(4px);
+}
+
+/* ── Social / cosmetic buttons ── */
+.lf-social-btns {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  margin-bottom: 1.5rem;
+}
+
+.lf-social-wrap {
+  position: relative;
+}
+
+.lf-btn-social {
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  padding: 0.75rem 1.25rem;
+  min-height: 50px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  opacity: 0.72;
+  text-transform: none;
+  letter-spacing: 0.3px;
+  font-weight: 600;
+  justify-content: flex-start;
+  gap: 0.75rem;
+}
+
+.lf-btn-social:hover {
+  opacity: 0.95;
+  border-color: rgba(124, 58, 237, 0.35);
+  background: rgba(124, 58, 237, 0.07);
+  color: var(--text-primary);
+  transform: none; /* subtle — don't lift like guest btn */
+}
+
+.lf-btn-social:active {
+  transform: scale(0.98);
+}
+
+/* Google G icon */
+.lf-social-icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+.lf-email-icon {
+  font-size: 1.1rem;
+  width: auto;
+  height: auto;
+}
+
+/* ── Tooltip "Coming soon!" ── */
+.lf-tooltip {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--bg-card);
+  border: 1px solid rgba(124, 58, 237, 0.4);
+  border-radius: 8px;
+  padding: 5px 14px;
+  font-family: var(--font-ui);
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--accent-purple);
+  white-space: nowrap;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4), 0 0 12px rgba(124, 58, 237, 0.2);
+  pointer-events: none;
+  z-index: 50;
+  animation: tooltipIn 0.18s ease-out both;
+}
+
+/* Tooltip tail */
+.lf-tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%; left: 50%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-top-color: rgba(124, 58, 237, 0.4);
+}
+
+@keyframes tooltipIn {
+  from { opacity: 0; transform: translateX(-50%) translateY(4px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+/* ============================================================
+   Divider
+   ============================================================ */
+.lf-divider {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.lf-divider-line {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.1), transparent);
+}
+
+.lf-divider-text {
+  font-family: var(--font-ui);
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  letter-spacing: 0.5px;
+  text-transform: lowercase;
+}
+
+/* ============================================================
+   Footer
+   ============================================================ */
+.lf-footer {
+  font-family: var(--font-ui);
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  text-align: center;
+  opacity: 0.55;
+  line-height: 1.5;
+}
+
+.lf-footer-link {
+  color: var(--accent-purple);
+  cursor: default;
+  opacity: 0.8;
+}
+
+/* ============================================================
+   Mobile responsive (≤ 480px)
+   ============================================================ */
+@media (max-width: 480px) {
+  .lf-page { padding: 1rem; align-items: flex-start; padding-top: 2rem; }
+
+  .lf-card {
+    padding: 1.75rem 1.25rem 1.5rem;
+    border-radius: 16px;
+    max-width: 100%;
+  }
+
+  .lf-title { font-size: 1.4rem; }
+  .lf-logo-text { font-size: 0.7rem; letter-spacing: 3px; }
+
+  .lf-btn-guest {
+    font-size: 0.9rem;
+    padding: 0.9rem 1.25rem;
+    min-height: 56px; /* keep tap target */
+  }
+
+  .lf-btn-social { font-size: 0.85rem; min-height: 48px; }
+
+  .lf-corner { width: 16px; height: 16px; top: 12px; left: 12px; }
+  .lf-corner-tr { top: 12px; left: auto; right: 12px; }
+  .lf-corner-bl { top: auto; bottom: 12px; left: 12px; }
+  .lf-corner-br { top: auto; bottom: 12px; right: 12px; left: auto; }
+}
