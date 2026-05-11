@@ -4,6 +4,6 @@
     "builder": "NIXPACKS"
   },
   "deploy": {
-    "rootDirectory": "/server"
+    "rootDirectory": "server"
   }
 }
