@@ -17,7 +17,7 @@ export default function Login({ onPlay }) {
   // Subtle title letter shimmer — cycle active letter index
   const [shimmerIdx, setShimmerIdx] = useState(-1);
   useEffect(() => {
-    const letters = 'LARIPIN'.length;
+    const letters = 'BURJAW'.length;
     let i = 0;
     const id = setInterval(() => {
       setShimmerIdx(i % letters);
@@ -26,7 +26,7 @@ export default function Login({ onPlay }) {
     return () => clearInterval(id);
   }, []);
 
-  const titleLetters = 'LARIPIN'.split('');
+  const titleLetters = 'BURJAW'.split('');
 
   return (
     <div className={`login-page ${exiting ? 'login-exit' : 'login-enter'}`}>
@@ -62,7 +62,7 @@ export default function Login({ onPlay }) {
         <div className="login-badge">⚡ MULTIPLAYER QUIZ GAME ⚡</div>
 
         {/* Animated title */}
-        <h1 className="login-title" aria-label="LARIPIN">
+        <h1 className="login-title" aria-label="BURJAW">
           {titleLetters.map((letter, i) => (
             <span
               key={i}
@@ -99,7 +99,7 @@ export default function Login({ onPlay }) {
           id="login-play-btn"
           className="login-play-btn"
           onClick={handlePlay}
-          aria-label="Mulai bermain LARIPIN"
+          aria-label="Mulai bermain BURJAW"
         >
           <span className="login-play-btn-glow" aria-hidden="true" />
           <span className="login-play-btn-text">⚡ PLAY NOW</span>

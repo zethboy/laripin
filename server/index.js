@@ -17,5 +17,5 @@ setupGameHandlers(io);
 
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
-  console.log(`🚀 Laripin server running on port ${PORT}`);
+  console.log(`🚀 Burjaw server running on port ${PORT}`);
 });

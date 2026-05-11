@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Login from './pages/Login';
 import LoginForm from './pages/LoginForm';
 import Home from './pages/Home';
@@ -6,29 +6,69 @@ import Lobby from './pages/Lobby';
 import Game from './pages/Game';
 import Result from './pages/Result';
 import ConnectionStatus from './components/ConnectionStatus';
+import SoundController from './components/SoundController';
+import { useAudio } from './audio/AudioContext';
+import socket from './socket';
 import './App.css';
+import './styles/KickModal.css';
 
 /**
- * App — root router
- *
- * Page flow:
- *   login (splash) → loginForm (cosmetic) → home → lobby → game → result
- *
- * goTo() wraps every transition in a 250 ms fade-out so page-wrap's
- * CSS animation plays before the new page mounts.
+ * App — root router & global state
  */
 export default function App() {
   const [page, setPage] = useState('login');
   const [transitioning, setTransitioning] = useState(false);
-  const [playerInfo, setPlayerInfo] = useState({ username: '', avatarId: 'pingo' });
+  const [playerInfo, setPlayerInfo] = useState({ username: '', avatarId: 'pingo', socketId: '' });
   const [roomCode, setRoomCode] = useState('');
   const [leaderboard, setLeaderboard] = useState([]);
-  // Capture question_start data that arrives while Lobby→Game transition is happening
   const [initialQuestion, setInitialQuestion] = useState(null);
 
-  // Smooth page transition: fade-out → swap → fade-in
+  // New Global States
+  const [isSpectator, setIsSpectator] = useState(false);
+  const [kickMessage, setKickMessage] = useState('');
+
+  const { playBGM, playTransition } = useAudio();
+
+  // ── Global Socket Listeners ──
+  useEffect(() => {
+    const handleKick = ({ message }) => {
+      setKickMessage(message || 'Kamu dikeluarkan oleh host.');
+      setRoomCode('');
+      setIsSpectator(false);
+      setPage('home');
+      // Clear message after 4s
+      setTimeout(() => setKickMessage(''), 4000);
+    };
+
+    const handleKickGlobal = ({ targetName }) => {
+      if (targetName === playerInfo.username) {
+        handleKick({ message: 'Kamu dikeluarkan oleh host.' });
+      }
+    };
+
+    socket.on('player_kicked', handleKick);
+    socket.on('player_kicked_global', handleKickGlobal);
+    return () => {
+      socket.off('player_kicked', handleKick);
+      socket.off('player_kicked_global', handleKickGlobal);
+    };
+  }, [playerInfo.username]);
+
+  // ── BGM Manager ──
+  useEffect(() => {
+    // Determine BGM track based on current page
+    if (['login', 'loginForm', 'home', 'lobby'].includes(page)) {
+      playBGM('lobby');
+    } else if (page === 'game') {
+      playBGM('game');
+    } else if (page === 'result') {
+      playBGM('result');
+    }
+  }, [page, playBGM]);
+
   const goTo = (nextPage) => {
     setTransitioning(true);
+    playTransition();
     setTimeout(() => {
       setPage(nextPage);
       setTransitioning(false);
@@ -37,52 +77,63 @@ export default function App() {
 
   return (
     <div className="app">
-      {/* Global socket connection banner (fixed, always on top) */}
       <ConnectionStatus />
+      
+      {/* Global Sound Controller */}
+      <SoundController />
 
-      {/* Page wrapper — toggles page-out / page-in CSS classes */}
+      {/* Kick Notification Toast */}
+      {kickMessage && (
+        <div className="kicked-toast">
+          <span className="kicked-toast-icon">⚠️</span>
+          <span>{kickMessage}</span>
+        </div>
+      )}
+
       <div className={`page-wrap ${transitioning ? 'page-out' : 'page-in'}`}>
 
-        {/* ── 1. Splash screen ── */}
         {page === 'login' && (
           <Login onPlay={() => goTo('loginForm')} />
         )}
 
-        {/* ── 2. Cosmetic login form ── */}
         {page === 'loginForm' && (
           <LoginForm onGuest={() => goTo('home')} />
         )}
 
-        {/* ── 3. Username + character + room select ── */}
         {page === 'home' && (
           <Home
-            onEnter={(info, code) => {
+            onEnter={(info, code, spectatorMode = false) => {
               setPlayerInfo(info);
               setRoomCode(code);
+              setIsSpectator(spectatorMode);
               goTo('lobby');
             }}
           />
         )}
 
-        {/* ── 4. Lobby / waiting room ── */}
         {page === 'lobby' && (
           <Lobby
             playerInfo={playerInfo}
             roomCode={roomCode}
+            isSpectator={isSpectator}
+            setIsSpectator={setIsSpectator}
             onGameStart={(questionData) => {
               setInitialQuestion(questionData);
               goTo('game');
             }}
-            onLeave={() => goTo('home')}
+            onLeave={() => {
+              setIsSpectator(false);
+              goTo('home');
+            }}
           />
         )}
 
-        {/* ── 5. Game arena ── */}
         {page === 'game' && (
           <Game
             playerInfo={playerInfo}
             roomCode={roomCode}
             initialQuestion={initialQuestion}
+            isSpectator={isSpectator}
             onGameOver={(lb) => {
               setInitialQuestion(null);
               setLeaderboard(lb);
@@ -91,12 +142,14 @@ export default function App() {
           />
         )}
 
-        {/* ── 6. Result / leaderboard ── */}
         {page === 'result' && (
           <Result
             leaderboard={leaderboard}
             myId={playerInfo.socketId}
-            onPlayAgain={() => goTo('home')}
+            onPlayAgain={() => {
+              setIsSpectator(false);
+              goTo('home');
+            }}
           />
         )}
       </div>

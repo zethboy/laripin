@@ -14,11 +14,15 @@ export default function Home({ onEnter }) {
   useEffect(() => {
     socket.on('room_created', ({ roomCode }) => {
       setLoading(false);
-      onEnter({ username, avatarId: selectedChar, socketId: socket.id }, roomCode, true);
+      onEnter({ username, avatarId: selectedChar, socketId: socket.id }, roomCode, false);
     });
     socket.on('room_joined', ({ roomCode }) => {
       setLoading(false);
       onEnter({ username, avatarId: selectedChar, socketId: socket.id }, roomCode, false);
+    });
+    socket.on('joined_as_spectator', ({ roomCode }) => {
+      setLoading(false);
+      onEnter({ username, avatarId: selectedChar, socketId: socket.id }, roomCode, true);
     });
     socket.on('error', ({ message }) => {
       setLoading(false);
@@ -27,9 +31,10 @@ export default function Home({ onEnter }) {
     return () => {
       socket.off('room_created');
       socket.off('room_joined');
+      socket.off('joined_as_spectator');
       socket.off('error');
     };
-  }, [username, selectedChar]);
+  }, [username, selectedChar, onEnter]);
 
   const handleCreate = () => {
     if (!username.trim()) return setError('Masukkan username dulu!');
@@ -61,7 +66,7 @@ export default function Home({ onEnter }) {
       <div className="home-container">
         {/* Title */}
         <div className="home-title-wrap">
-          <h1 className="home-title">LARIPIN</h1>
+          <h1 className="home-title">BURJAW</h1>
           <p className="home-subtitle">Siapa paling pintar? Buktikan sekarang!</p>
         </div>
 

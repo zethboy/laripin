@@ -20,8 +20,8 @@ export default function LoginForm({ onGuest }) {
       <div className="lf-card" role="main">
 
         {/* Mini logo */}
-        <div className="lf-logo" aria-label="LARIPIN">
-          <span className="lf-logo-text">LARIPIN</span>
+        <div className="lf-logo" aria-label="BURJAW">
+          <span className="lf-logo-text">BURJAW</span>
           <span className="lf-logo-dot" aria-hidden="true" />
         </div>
 

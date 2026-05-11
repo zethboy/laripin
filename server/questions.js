@@ -14,10 +14,24 @@ const questions = [
   { id: 13, statement: "Kilat lebih cepat terlihat daripada petir terdengar", is_correct: true, category: "Sains" },
   { id: 14, statement: "Semut bisa mengangkat 50 kali berat tubuhnya", is_correct: true, category: "Fakta Unik" },
   { id: 15, statement: "Planet terbesar di tata surya adalah Saturnus", is_correct: false, category: "Sains" },
+  { id: 16, statement: "Venus adalah planet terpanas di tata surya kita", is_correct: true, category: "Sains" },
+  { id: 17, statement: "Emas adalah logam yang paling keras di bumi", is_correct: false, category: "Sains" },
+  { id: 18, statement: "Albert Einstein adalah penemu bola lampu", is_correct: false, category: "Sejarah" },
+  { id: 19, statement: "Burung unta tidak bisa terbang", is_correct: true, category: "Biologi" },
+  { id: 20, statement: "Gurun Sahara adalah gurun terbesar di dunia", is_correct: false, category: "Geografi" },
+  { id: 21, statement: "DNA manusia 50% mirip dengan pisang", is_correct: true, category: "Sains" },
+  { id: 22, statement: "Rusia adalah negara dengan wilayah terluas di dunia", is_correct: true, category: "Geografi" },
+  { id: 23, statement: "Kelelawar adalah hewan buta", is_correct: false, category: "Mitos" },
+  { id: 24, statement: "Bambu adalah jenis rumput", is_correct: true, category: "Biologi" },
+  { id: 25, statement: "Gurita memiliki tiga jantung", is_correct: true, category: "Biologi" }
 ];
 
 function getRandomQuestions(count = 10) {
-  const shuffled = [...questions].sort(() => Math.random() - 0.5);
+  const shuffled = [...questions];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
   return shuffled.slice(0, count);
 }
 

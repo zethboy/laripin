@@ -1,0 +1,195 @@
+/* ============================================================
+   SoundController.css — Floating audio controller
+   Glassmorphism style, responsive, fixed bottom-right
+   ============================================================ */
+
+.sound-ctrl-wrap {
+  position: fixed;
+  bottom: 1.25rem;
+  right: 1.25rem;
+  z-index: 9000;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.35rem;
+  animation: soundCtrlIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: 0.5s;
+}
+
+@keyframes soundCtrlIn {
+  from { opacity: 0; transform: scale(0.6) translateY(20px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+/* ── Main mute/unmute button ── */
+.sound-ctrl-btn {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 1px solid rgba(124, 58, 237, 0.35);
+  background: rgba(26, 26, 46, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.4),
+    0 0 20px rgba(124, 58, 237, 0.15);
+}
+
+.sound-ctrl-btn:hover {
+  border-color: rgba(124, 58, 237, 0.6);
+  box-shadow:
+    0 4px 20px rgba(0, 0, 0, 0.5),
+    0 0 30px rgba(124, 58, 237, 0.3);
+  transform: scale(1.08);
+}
+
+.sound-ctrl-btn:active {
+  transform: scale(0.95);
+}
+
+.sound-ctrl-btn--muted {
+  border-color: rgba(255, 71, 87, 0.35);
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.4),
+    0 0 15px rgba(255, 71, 87, 0.15);
+}
+
+.sound-ctrl-btn--muted:hover {
+  border-color: rgba(255, 71, 87, 0.6);
+  box-shadow:
+    0 4px 20px rgba(0, 0, 0, 0.5),
+    0 0 25px rgba(255, 71, 87, 0.3);
+}
+
+.sound-ctrl-icon {
+  font-size: 1.25rem;
+  line-height: 1;
+  user-select: none;
+}
+
+/* ── Expand/settings mini button ── */
+.sound-ctrl-expand {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(26, 26, 46, 0.7);
+  backdrop-filter: blur(8px);
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  opacity: 0.6;
+}
+
+.sound-ctrl-expand:hover {
+  opacity: 1;
+  border-color: rgba(124, 58, 237, 0.4);
+  transform: scale(1.1) rotate(45deg);
+}
+
+/* ── Volume slider popup ── */
+.sound-slider-popup {
+  background: rgba(26, 26, 46, 0.92);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(124, 58, 237, 0.3);
+  border-radius: 12px;
+  padding: 0.75rem 0.85rem;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.5),
+    0 0 20px rgba(124, 58, 237, 0.1);
+  animation: sliderPopIn 0.2s ease-out;
+  margin-bottom: 0.25rem;
+}
+
+@keyframes sliderPopIn {
+  from { opacity: 0; transform: translateY(8px) scale(0.9); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ── Range slider styling ── */
+.sound-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100px;
+  height: 4px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  outline: none;
+  cursor: pointer;
+}
+
+.sound-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--accent-purple);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  cursor: pointer;
+  box-shadow: 0 0 10px rgba(124, 58, 237, 0.6);
+  transition: box-shadow 0.2s;
+}
+
+.sound-slider::-webkit-slider-thumb:hover {
+  box-shadow: 0 0 18px rgba(124, 58, 237, 0.9);
+}
+
+.sound-slider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--accent-purple);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  cursor: pointer;
+  box-shadow: 0 0 10px rgba(124, 58, 237, 0.6);
+}
+
+.sound-slider-label {
+  font-family: var(--font-game);
+  font-size: 0.42rem;
+  color: var(--text-secondary);
+  min-width: 28px;
+  text-align: right;
+  letter-spacing: 0.5px;
+}
+
+/* ── Mobile responsive ── */
+@media (max-width: 480px) {
+  .sound-ctrl-wrap {
+    bottom: 0.75rem;
+    right: 0.75rem;
+  }
+
+  .sound-ctrl-btn {
+    width: 42px;
+    height: 42px;
+  }
+
+  .sound-ctrl-icon {
+    font-size: 1.1rem;
+  }
+
+  .sound-ctrl-expand {
+    width: 24px;
+    height: 24px;
+    font-size: 0.65rem;
+  }
+
+  .sound-slider {
+    width: 80px;
+  }
+}

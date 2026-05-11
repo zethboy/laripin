@@ -1,89 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import socket from '../socket';
 import { getCharacter } from '../constants/characters';
+import { useAudio } from '../audio/AudioContext';
 import '../styles/Game.css';
-
-/* ============================================================
-   WEB AUDIO — Pure JS sound synthesis, no library needed
-   All sounds use AudioContext oscillators / buffers
-   ============================================================ */
-
-/**
- * Returns the shared AudioContext (created lazily after user gesture).
- * Browser policy: AudioContext must be created/resumed after a user interaction.
- */
-let _audioCtx = null;
-function getAudioCtx() {
-  if (!_audioCtx) {
-    _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  }
-  // Resume if suspended (some browsers require this)
-  if (_audioCtx.state === 'suspended') _audioCtx.resume();
-  return _audioCtx;
-}
-
-/** Play a sequence of tones defined as [frequency, startTime, duration, volume] */
-function playTones(tones, waveform = 'sine') {
-  const ctx = getAudioCtx();
-  const masterGain = ctx.createGain();
-  masterGain.gain.setValueAtTime(0.25, ctx.currentTime);
-  masterGain.connect(ctx.destination);
-
-  tones.forEach(([freq, start, dur, vol = 1]) => {
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.type = waveform;
-    osc.frequency.setValueAtTime(freq, ctx.currentTime + start);
-    gain.gain.setValueAtTime(vol * 0.25, ctx.currentTime + start);
-    // Quick fade-out to avoid clicks
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + start + dur);
-    osc.connect(gain);
-    gain.connect(masterGain);
-    osc.start(ctx.currentTime + start);
-    osc.stop(ctx.currentTime + start + dur + 0.01);
-  });
-}
-
-/** ✅ Correct answer — ascending pleasant chime */
-function playCorrectSound() {
-  playTones([
-    [523, 0.00, 0.12, 0.9],  // C5
-    [659, 0.10, 0.12, 0.8],  // E5
-    [784, 0.20, 0.25, 1.0],  // G5
-    [1047, 0.32, 0.35, 0.7],  // C6
-  ], 'sine');
-}
-
-/** ❌ Wrong answer — descending buzzer */
-function playWrongSound() {
-  const ctx = getAudioCtx();
-  const osc = ctx.createOscillator();
-  const gain = ctx.createGain();
-  osc.type = 'sawtooth';
-  osc.frequency.setValueAtTime(300, ctx.currentTime);
-  osc.frequency.exponentialRampToValueAtTime(80, ctx.currentTime + 0.35);
-  gain.gain.setValueAtTime(0.2, ctx.currentTime);
-  gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
-  osc.connect(gain);
-  gain.connect(ctx.destination);
-  osc.start(ctx.currentTime);
-  osc.stop(ctx.currentTime + 0.42);
-}
-
-/** ⏱ Tick sound for urgent timer (≤ 3 s) */
-function playTickSound() {
-  const ctx = getAudioCtx();
-  const osc = ctx.createOscillator();
-  const gain = ctx.createGain();
-  osc.type = 'square';
-  osc.frequency.setValueAtTime(880, ctx.currentTime);
-  gain.gain.setValueAtTime(0.08, ctx.currentTime);
-  gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.07);
-  osc.connect(gain);
-  gain.connect(ctx.destination);
-  osc.start(ctx.currentTime);
-  osc.stop(ctx.currentTime + 0.08);
-}
+import '../styles/KickModal.css';
 
 /* ============================================================
    CharacterUnit sub-component
@@ -106,28 +26,33 @@ function CharacterUnit({ player, isMe, animState }) {
 function CountdownOverlay({ onDone }) {
   const [count, setCount] = useState(3);
   const [label, setLabel] = useState('3');
+  const { audioManager } = useAudio();
 
   useEffect(() => {
-    // Play an ascending tone for each count
+    const ctx = audioManager.getContext();
+    const dest = audioManager.getSfxDestination();
+    if (!ctx || !dest) return;
+
     const toneFreqs = [261, 329, 392, 784]; // C, E, G, G(high)
     let step = 0;
+
+    const playStepTone = (freq, vol = 0.2, dur = 0.25) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(vol, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur);
+      osc.connect(gain);
+      gain.connect(dest);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + dur + 0.05);
+    };
 
     const tick = () => {
       step++;
       if (step < 4) {
-        // Play tone
-        const ctx = getAudioCtx();
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.frequency.value = toneFreqs[step - 1] || 523;
-        gain.gain.setValueAtTime(0.2, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25);
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start(ctx.currentTime);
-        osc.stop(ctx.currentTime + 0.28);
-
-        setCount(4 - step); // 3 → 2 → 1
+        playStepTone(toneFreqs[step - 1]);
+        setCount(4 - step);
         setLabel(String(4 - step));
       }
     };
@@ -137,15 +62,17 @@ function CountdownOverlay({ onDone }) {
       setTimeout(() => { setLabel('2'); tick(); }, 1000),
       setTimeout(() => { setLabel('1'); tick(); }, 2000),
       setTimeout(() => {
-        // "GO!" with a fanfare burst
         setLabel('GO!');
-        playTones([[523, 0, 0.1], [659, 0.08, 0.1], [784, 0.16, 0.2], [1047, 0.28, 0.4, 1.2]], 'sine');
+        // GO! Fanfare
+        [523, 659, 784, 1047].forEach((f, i) => {
+          setTimeout(() => playStepTone(f, 0.25, 0.4), i * 80);
+        });
       }, 3000),
       setTimeout(() => onDone(), 3700),
     ];
 
     return () => sequence.forEach(clearTimeout);
-  }, [onDone]);
+  }, [onDone, audioManager]);
 
   const isGo = label === 'GO!';
 
@@ -161,41 +88,83 @@ function CountdownOverlay({ onDone }) {
 /* ============================================================
    Main Game component
    ============================================================ */
-export default function Game({ playerInfo, roomCode, initialQuestion, onGameOver }) {
+export default function Game({ playerInfo, roomCode, initialQuestion, isSpectator, onGameOver }) {
   const [players, setPlayers] = useState([]);
   const [question, setQuestion] = useState(null);
   const [timeLeft, setTimeLeft] = useState(10);
   const [questionIndex, setQuestionIndex] = useState(0);
   const [totalQuestions, setTotalQuestions] = useState(10);
   const [answered, setAnswered] = useState(false);
-  const [myChoice, setMyChoice] = useState(null); // true | false | null
+  const [myChoice, setMyChoice] = useState(null);
   const [lanes, setLanes] = useState({});
   const [animStates, setAnimStates] = useState({});
   const [result, setResult] = useState(null);
   const [phase, setPhase] = useState('playing'); // 'playing' | 'result'
   const [showCountdown, setShowCountdown] = useState(false);
-  const [floatingReaction, setFloatingReaction] = useState(null); // '+1' | '❌' | null
+  const [floatingReaction, setFloatingReaction] = useState(null);
+
+  const { audioManager } = useAudio();
 
   const timerRef = useRef(null);
   const timerBarRef = useRef(null);
-  const tickFiredRef = useRef(false);
   const prevTimeLeft = useRef(timeLeft);
-  // Store timer duration when question_start arrives so countdown callback can use it
   const pendingTimerDuration = useRef(10);
 
-  /* ── Tick sound when timer hits urgent zone ── */
+  /* ── SFX Helpers using shared context ── */
+  const playSFX = useCallback((type) => {
+    const ctx = audioManager.getContext();
+    const dest = audioManager.getSfxDestination();
+    if (!ctx || !dest) return;
+
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    if (type === 'tick') {
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(880, ctx.currentTime);
+      gain.gain.setValueAtTime(0.15, ctx.currentTime); // Increased from 0.08
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.07);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.08);
+    } else if (type === 'correct') {
+      [523, 659, 784, 1047].forEach((f, i) => {
+        const o = ctx.createOscillator();
+        const g = ctx.createGain();
+        o.frequency.setValueAtTime(f, ctx.currentTime + i * 0.1);
+        g.gain.setValueAtTime(0.25, ctx.currentTime + i * 0.1); // Increased from 0.15
+        g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.1 + 0.3);
+        o.connect(g);
+        g.connect(dest);
+        o.start(ctx.currentTime + i * 0.1);
+        o.stop(ctx.currentTime + i * 0.1 + 0.35);
+      });
+      return;
+    } else if (type === 'wrong') {
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(300, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(80, ctx.currentTime + 0.35);
+      gain.gain.setValueAtTime(0.25, ctx.currentTime); // Increased from 0.15
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.42);
+    }
+
+    osc.connect(gain);
+    gain.connect(dest);
+  }, [audioManager]);
+
+  /* ── Tick sound logic ── */
   useEffect(() => {
     if (timeLeft <= 3 && timeLeft > 0 && phase === 'playing' && timeLeft !== prevTimeLeft.current) {
-      playTickSound();
+      playSFX('tick');
     }
     prevTimeLeft.current = timeLeft;
-  }, [timeLeft, phase]);
+  }, [timeLeft, phase, playSFX]);
 
   /* ── Socket listeners ── */
   useEffect(() => {
     socket.on('room_update', ({ players }) => {
       setPlayers(players);
-      // Only init lanes/animStates for NEW players (don't wipe existing positions)
       setLanes(prev => {
         const next = { ...prev };
         players.forEach(p => { if (!(p.id in next)) next[p.id] = null; });
@@ -227,7 +196,6 @@ export default function Game({ playerInfo, roomCode, initialQuestion, onGameOver
         startLocalTimer(timer);
       }
 
-      // Reset lane positions and animations
       setLanes(prev => {
         const reset = {};
         Object.keys(prev).forEach(id => { reset[id] = null; });
@@ -253,16 +221,16 @@ export default function Game({ playerInfo, roomCode, initialQuestion, onGameOver
       setResult({ correctAnswer, scores });
       setPhase('result');
 
-      // Animate each player celebrate/fall
       scores.forEach(s => {
         setAnimStates(prev => ({ ...prev, [s.id]: s.wasCorrect ? 'celebrate' : 'fall' }));
       });
 
-      // Play sound for my result
-      const myResult = scores.find(s => s.id === socket.id);
-      if (myResult) {
-        if (myResult.wasCorrect) playCorrectSound();
-        else playWrongSound();
+      // Play result sound if not spectator
+      if (!isSpectator) {
+        const myResult = scores.find(s => s.id === socket.id);
+        if (myResult) {
+          playSFX(myResult.wasCorrect ? 'correct' : 'wrong');
+        }
       }
     });
 
@@ -279,9 +247,9 @@ export default function Game({ playerInfo, roomCode, initialQuestion, onGameOver
       socket.off('game_over');
       clearInterval(timerRef.current);
     };
-  }, []);
+  }, [onGameOver, playSFX, isSpectator]);
 
-  /* ── Process initialQuestion on mount (question #0 captured before Game mounted) ── */
+  /* ── Initial question processing ── */
   useEffect(() => {
     if (!initialQuestion) return;
     const { statement, category, questionIndex, total, timer, players: initPlayers } = initialQuestion;
@@ -294,16 +262,13 @@ export default function Game({ playerInfo, roomCode, initialQuestion, onGameOver
     setMyChoice(null);
     setResult(null);
     setPhase('playing');
-    setFloatingReaction(null);
 
-    if (questionIndex === 0) {
-      setShowCountdown(true);
-    } else {
+    if (questionIndex === 0) setShowCountdown(true);
+    else {
       startTimerBar(timer ?? 10);
       startLocalTimer(timer ?? 10);
     }
 
-    // Init lanes for any players already known
     if (initPlayers && initPlayers.length > 0) {
       const lanes = {};
       const anims = {};
@@ -312,10 +277,8 @@ export default function Game({ playerInfo, roomCode, initialQuestion, onGameOver
       setAnimStates(anims);
       setPlayers(initPlayers);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [initialQuestion]);
 
-  /* ── Timer helpers ── */
   const startTimerBar = useCallback((duration) => {
     if (timerBarRef.current) {
       timerBarRef.current.style.transition = 'none';
@@ -339,38 +302,36 @@ export default function Game({ playerInfo, roomCode, initialQuestion, onGameOver
     }, 1000);
   }, []);
 
-  /* Called when countdown "3-2-1-GO" finishes */
   const handleCountdownDone = useCallback(() => {
     setShowCountdown(false);
-    // Use the stored duration (set when question_start was received)
     const dur = pendingTimerDuration.current;
     startTimerBar(dur);
     startLocalTimer(dur);
   }, [startTimerBar, startLocalTimer]);
 
-  /* ── Answer handler ── */
   const handleAnswer = (choice) => {
-    // Block if time is up (phase changed to result) — but allow re-answering during playing
-    if (phase !== 'playing' || timeLeft <= 0) return;
-    // If same lane clicked again, do nothing
+    if (isSpectator || phase !== 'playing' || timeLeft <= 0) return;
     if (myChoice === choice) return;
     setAnswered(true);
     setMyChoice(choice);
     socket.emit('player_answer', { roomCode, answer: choice });
   };
 
-  /* Update floating reaction when result arrives for my answer */
   useEffect(() => {
-    if (phase === 'result' && result && myChoice !== null) {
+    if (!isSpectator && phase === 'result' && result && myChoice !== null) {
       const myResult = result.scores?.find(s => s.id === socket.id);
       if (myResult) {
         setFloatingReaction(myResult.wasCorrect ? '+1 ✨' : '❌');
         setTimeout(() => setFloatingReaction(null), 2000);
       }
     }
-  }, [phase, result]);
+  }, [phase, result, myChoice, isSpectator]);
 
-  const myScore = result?.scores?.find(s => s.id === socket.id)?.score ?? 0;
+  const myScore = isSpectator ? 0 : (
+    phase === 'result' && result
+      ? (result.scores?.find(s => s.id === socket.id)?.score ?? 0)
+      : (players.find(p => p.id === socket.id)?.score ?? 0)
+  );
 
   const benarPlayers = players.filter(p => lanes[p.id] === 'benar');
   const salahPlayers = players.filter(p => lanes[p.id] === 'salah');
@@ -378,13 +339,15 @@ export default function Game({ playerInfo, roomCode, initialQuestion, onGameOver
 
   return (
     <div className="game-page">
-
-      {/* ── Countdown overlay (first question only) ── */}
-      {showCountdown && (
-        <CountdownOverlay onDone={handleCountdownDone} />
+      {isSpectator && (
+        <div className="spectator-banner">
+          <span className="spectator-banner-icon">👁</span>
+          <span>MENONTON SEBAGAI PENONTON (READ-ONLY)</span>
+        </div>
       )}
 
-      {/* ── Top HUD ── */}
+      {showCountdown && <CountdownOverlay onDone={handleCountdownDone} />}
+
       <div className="game-hud">
         <div className="hud-item">
           <span className="hud-label">SOAL</span>
@@ -394,20 +357,15 @@ export default function Game({ playerInfo, roomCode, initialQuestion, onGameOver
           <span className="timer-num">{timeLeft}</span>
         </div>
         <div className="hud-item right">
-          <span className="hud-label">POIN</span>
-          <span className="hud-value neon-text-green">{myScore}</span>
+          <span className="hud-label">{isSpectator ? 'WATCHING' : 'POIN'}</span>
+          <span className="hud-value neon-text-green">{isSpectator ? '...' : myScore}</span>
         </div>
       </div>
 
-      {/* ── Timer bar ── */}
       <div className="timer-bar-track">
-        <div
-          ref={timerBarRef}
-          className={`timer-bar-fill ${timeLeft <= 3 ? 'urgent' : ''}`}
-        />
+        <div ref={timerBarRef} className={`timer-bar-fill ${timeLeft <= 3 ? 'urgent' : ''}`} />
       </div>
 
-      {/* ── Statement ── */}
       {question && (
         <div className="statement-wrap">
           <div className="question-category">{question.category}</div>
@@ -415,96 +373,80 @@ export default function Game({ playerInfo, roomCode, initialQuestion, onGameOver
         </div>
       )}
 
-      {/* ── Result banner ── */}
       {phase === 'result' && result && (
         <div className={`result-banner ${result.correctAnswer ? 'correct' : 'incorrect'}`}>
           Jawaban: <strong>{result.correctAnswer ? '✓ BENAR' : '✗ SALAH'}</strong>
         </div>
       )}
 
-      {/* ── Arena — 3 lanes ── */}
       <div className="arena">
-        {/* BENAR lane */}
         <div className={`lane lane-benar ${phase === 'result' && result?.correctAnswer ? 'lane-highlight' : ''}`}>
           <div className="lane-label neon-text-green">BENAR</div>
           <div className="lane-chars">
             {benarPlayers.map(p => (
-              <CharacterUnit key={p.id} player={p} isMe={p.id === socket.id} animState={animStates[p.id] || 'idle'} />
+              <CharacterUnit key={p.id} player={p} isMe={!isSpectator && p.id === socket.id} animState={animStates[p.id] || 'idle'} />
             ))}
           </div>
         </div>
 
-        {/* NEUTRAL zone */}
         <div className="lane lane-neutral">
-          <div className="lane-label" style={{ color: 'var(--text-secondary)' }}>?</div>
+          <div className="lane-label">?</div>
           <div className="lane-chars">
             {neutralPlayers.map(p => (
-              <CharacterUnit key={p.id} player={p} isMe={p.id === socket.id} animState={animStates[p.id] || 'idle'} />
+              <CharacterUnit key={p.id} player={p} isMe={!isSpectator && p.id === socket.id} animState={animStates[p.id] || 'idle'} />
             ))}
           </div>
         </div>
 
-        {/* SALAH lane */}
         <div className={`lane lane-salah ${phase === 'result' && !result?.correctAnswer ? 'lane-highlight' : ''}`}>
           <div className="lane-label neon-text-red">SALAH</div>
           <div className="lane-chars">
             {salahPlayers.map(p => (
-              <CharacterUnit key={p.id} player={p} isMe={p.id === socket.id} animState={animStates[p.id] || 'idle'} />
+              <CharacterUnit key={p.id} player={p} isMe={!isSpectator && p.id === socket.id} animState={animStates[p.id] || 'idle'} />
             ))}
           </div>
         </div>
       </div>
 
-      {/* ── Answer buttons + floating reaction ── */}
-      <div className="answer-area">
-        <div className="answer-buttons">
-          <div className="answer-btn-wrap">
-            {/* Floating reaction above BENAR button */}
-            {floatingReaction && myChoice === true && (
-              <div className="floating-reaction">{floatingReaction}</div>
-            )}
-            <button
-              id="btn-benar"
-              className={`btn-primary btn-benar
-                ${myChoice === true ? 'btn-flash-benar' : ''}
-                ${myChoice === true ? 'btn-answered' : ''}`}
-              onClick={() => handleAnswer(true)}
-              disabled={phase === 'result' || timeLeft <= 0}
-              aria-label="Jawab Benar"
-            >
-              ✓ BENAR
-            </button>
-          </div>
+      {!isSpectator ? (
+        <div className="answer-area">
+          <div className="answer-buttons">
+            <div className="answer-btn-wrap">
+              {floatingReaction && myChoice === true && <div className="floating-reaction">{floatingReaction}</div>}
+              <button
+                className={`btn-primary btn-benar ${myChoice === true ? 'btn-flash-benar btn-answered' : ''}`}
+                onClick={() => handleAnswer(true)}
+                disabled={phase === 'result' || timeLeft <= 0}
+              >
+                ✓ BENAR
+              </button>
+            </div>
 
-          <div className="answer-btn-wrap">
-            {/* Floating reaction above SALAH button */}
-            {floatingReaction && myChoice === false && (
-              <div className="floating-reaction">{floatingReaction}</div>
-            )}
-            <button
-              id="btn-salah"
-              className={`btn-primary btn-salah
-                ${myChoice === false ? 'btn-flash-salah' : ''}
-                ${myChoice === false ? 'btn-answered' : ''}`}
-              onClick={() => handleAnswer(false)}
-              disabled={phase === 'result' || timeLeft <= 0}
-              aria-label="Jawab Salah"
-            >
-              ✗ SALAH
-            </button>
+            <div className="answer-btn-wrap">
+              {floatingReaction && myChoice === false && <div className="floating-reaction">{floatingReaction}</div>}
+              <button
+                className={`btn-primary btn-salah ${myChoice === false ? 'btn-flash-salah btn-answered' : ''}`}
+                onClick={() => handleAnswer(false)}
+                disabled={phase === 'result' || timeLeft <= 0}
+              >
+                ✗ SALAH
+              </button>
+            </div>
           </div>
+          {answered && phase === 'playing' && timeLeft > 0 && (
+            <div className="answered-msg">Sudah memilih — bisa ganti selagi waktu masih ada! ↔️</div>
+          )}
         </div>
-      </div>
-
-      {answered && phase === 'playing' && timeLeft > 0 && (
-        <div className="answered-msg">Sudah memilih — bisa ganti selagi waktu masih ada! ↔️</div>
+      ) : (
+        <div className="spectator-msg">
+          Melihat arena sebagai penonton... 👁
+        </div>
       )}
 
-      {/* ── "Next question coming..." — shown while waiting after result ── */}
       {phase === 'result' && (
-        <div className="waiting-next" aria-live="polite">
+        <div className="waiting-next">
           <span>Bersiap untuk soal berikutnya</span>
-          <span className="waiting-next-dots" aria-hidden="true">
+          <span className="waiting-next-dots">
             <span className="waiting-next-dot" />
             <span className="waiting-next-dot" />
             <span className="waiting-next-dot" />
