@@ -17,8 +17,9 @@ mongoose.connect(mongoURI)
 const cors = require('cors');
 
 app.use(cors({
-  origin: ['http://localhost:5173', process.env.CLIENT_URL || '*'],
-  methods: ['GET', 'POST']
+  origin: ['http://localhost:5173', process.env.CLIENT_URL || 'https://burjaw.vercel.app'],
+  methods: ['GET', 'POST'],
+  credentials: true,
 }));
 app.use(express.json());
 
@@ -28,8 +29,9 @@ app.use('/api/auth', authRoutes);
 
 const io = new Server(server, {
   cors: {
-    origin: ['http://localhost:5173', process.env.CLIENT_URL || '*'],
+    origin: ['http://localhost:5173', process.env.CLIENT_URL || 'https://burjaw.vercel.app'],
     methods: ['GET', 'POST'],
+    credentials: true,
   },
 });
 
