@@ -12,11 +12,13 @@ function getRoomSafeState(room) {
     code: room.code,
     hostId: room.hostId,
     status: room.status,
+    maxPlayers: room.maxPlayers || 6,
     players: room.players.map(p => ({
       id: p.id,
       username: p.username,
       avatarId: p.avatarId,
       score: p.score,
+      isGuest: p.isGuest
     })),
     spectators: room.spectators.map(s => ({
       id: s.id,
@@ -44,11 +46,17 @@ module.exports = function setupGameHandlers(io) {
     console.log('Player connected:', socket.id);
 
     // ── CREATE ROOM ──
-    socket.on('create_room', ({ username, avatarId }) => {
+    socket.on('create_room', ({ username, avatarId, maxPlayers, totalQuestions, difficulty }) => {
       const code = generateRoomCode();
+      const isGuest = socket.user?.isGuest !== false;
+      const capacity = isGuest ? 6 : (Math.max(4, Math.min(30, maxPlayers || 6)));
+      const qCount = isGuest ? 10 : (Math.max(10, Math.min(30, totalQuestions || 10)));
+      const qDiff = isGuest ? 'Campuran' : (difficulty || 'Campuran');
+      
       rooms[code] = {
         code,
         hostId: socket.id,
+        maxPlayers: capacity,
         status: 'waiting',
         players: [{
           id: socket.id,
@@ -58,9 +66,11 @@ module.exports = function setupGameHandlers(io) {
           answered: false,
           lastAnswer: null,
           choseLane: null,
+          isGuest,
+          dbId: socket.user?.dbId || null
         }],
         spectators: [],
-        questions: getRandomQuestions(10),
+        questions: getRandomQuestions(qCount, qDiff),
         currentQuestionIndex: 0,
         timer: null,
       };
@@ -80,7 +90,8 @@ module.exports = function setupGameHandlers(io) {
       if (room.spectators.find(s => s.id === socket.id)) return;
 
       // Room full → join as spectator
-      if (room.players.length >= MAX_PLAYERS) {
+      const capacity = room.maxPlayers || 6;
+      if (room.players.length >= capacity) {
         room.spectators.push({ id: socket.id, username, avatarId });
         socket.join(roomCode);
         socket.emit('joined_as_spectator', { roomCode });
@@ -99,6 +110,8 @@ module.exports = function setupGameHandlers(io) {
         answered: false,
         lastAnswer: null,
         choseLane: null,
+        isGuest: socket.user?.isGuest !== false,
+        dbId: socket.user?.dbId || null
       });
 
       socket.join(roomCode);
@@ -106,6 +119,14 @@ module.exports = function setupGameHandlers(io) {
       setTimeout(() => {
         io.to(roomCode).emit('room_update', getRoomSafeState(room));
       }, 300);
+    });
+
+    // ── GET ROOM STATE (For late mounters) ──
+    socket.on('get_room_state', ({ roomCode }) => {
+      const room = rooms[roomCode];
+      if (room) {
+        socket.emit('room_update', getRoomSafeState(room));
+      }
     });
 
     // ── START GAME ──
@@ -252,14 +273,17 @@ module.exports = function setupGameHandlers(io) {
         }
 
         if (found) {
-          if (room.players.length === 0 && room.spectators.length === 0) {
+          // If the disconnected socket is the Host, disband the room completely!
+          if (room.hostId === socket.id) {
+            io.to(code).emit('error', { message: 'Host telah keluar. Room dibubarkan!' });
+            io.to(code).emit('room_closed'); // Tell clients to leave
+            clearTimeout(room.timer);
+            delete rooms[code];
+          } else if (room.players.length === 0 && room.spectators.length === 0) {
             clearTimeout(room.timer);
             delete rooms[code];
           } else {
-            // Transfer host if needed
-            if (room.hostId === socket.id && room.players.length > 0) {
-              room.hostId = room.players[0].id;
-            }
+            // Normal player left, just update the room
             io.to(code).emit('room_update', getRoomSafeState(room));
           }
         }
@@ -318,12 +342,33 @@ function resolveQuestion(io, room) {
   if (room.currentQuestionIndex < room.questions.length) {
     room.timer = setTimeout(() => sendQuestion(io, room), 3500);
   } else {
-    room.timer = setTimeout(() => {
+    room.timer = setTimeout(async () => {
       room.status = 'finished';
       const leaderboard = [...room.players]
         .sort((a, b) => b.score - a.score)
         .map((p, i) => ({ rank: i + 1, id: p.id, username: p.username, avatarId: p.avatarId, score: p.score }));
+      
       io.to(room.code).emit('game_over', { leaderboard });
+
+      // Save stats to MongoDB for logged in users
+      try {
+        const User = require('./models/User');
+        for (const p of room.players) {
+          if (!p.isGuest && p.dbId) {
+            const isWinner = p.score > 0 && p.score === leaderboard[0].score;
+            await User.findByIdAndUpdate(p.dbId, {
+              $inc: {
+                totalGames: 1,
+                totalWins: isWinner ? 1 : 0,
+                totalPoints: p.score
+              }
+            });
+          }
+        }
+      } catch (err) {
+        console.error('Error saving user stats:', err);
+      }
     }, 3500);
   }
 }
+
