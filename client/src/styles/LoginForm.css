@@ -135,8 +135,32 @@
 }
 
 /* ============================================================
-   Buttons
+   Buttons & Forms
    ============================================================ */
+
+.lf-email-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.lf-input {
+  width: 100%;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(124, 58, 237, 0.3);
+  border-radius: 8px;
+  padding: 0.8rem 1rem;
+  color: var(--text-primary);
+  font-family: var(--font-ui);
+  font-size: 0.95rem;
+  transition: all 0.2s;
+  outline: none;
+}
+
+.lf-input:focus {
+  border-color: var(--accent-purple);
+  box-shadow: 0 0 10px rgba(124, 58, 237, 0.3);
+}
 
 /* Base button reset */
 .lf-btn {

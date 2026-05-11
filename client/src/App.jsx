@@ -8,6 +8,7 @@ import Result from './pages/Result';
 import ConnectionStatus from './components/ConnectionStatus';
 import SoundController from './components/SoundController';
 import { useAudio } from './audio/AudioContext';
+import { useAuth } from './context/AuthContext';
 import socket from './socket';
 import './App.css';
 import './styles/KickModal.css';
@@ -28,6 +29,14 @@ export default function App() {
   const [kickMessage, setKickMessage] = useState('');
 
   const { playBGM, playTransition } = useAudio();
+  const { currentUser, isGuest, loading } = useAuth();
+
+  // ── Auto-skip Login if Authenticated ──
+  useEffect(() => {
+    if (!loading && (currentUser || isGuest) && (page === 'login' || page === 'loginForm')) {
+      setPage('home');
+    }
+  }, [currentUser, isGuest, loading, page]);
 
   // ── Global Socket Listeners ──
   useEffect(() => {
@@ -46,11 +55,18 @@ export default function App() {
       }
     };
 
+    const handleRoomClosed = () => {
+      handleKick({ message: 'Host telah keluar. Room dibubarkan!' });
+    };
+
     socket.on('player_kicked', handleKick);
     socket.on('player_kicked_global', handleKickGlobal);
+    socket.on('room_closed', handleRoomClosed);
+    
     return () => {
       socket.off('player_kicked', handleKick);
       socket.off('player_kicked_global', handleKickGlobal);
+      socket.off('room_closed', handleRoomClosed);
     };
   }, [playerInfo.username]);
 
@@ -77,7 +93,7 @@ export default function App() {
 
   return (
     <div className="app">
-      <ConnectionStatus />
+      {!['login', 'loginForm', 'home'].includes(page) && <ConnectionStatus />}
       
       {/* Global Sound Controller */}
       <SoundController />

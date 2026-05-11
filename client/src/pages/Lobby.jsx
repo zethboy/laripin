@@ -13,6 +13,7 @@ export default function Lobby({ playerInfo, roomCode, isSpectator, onGameStart, 
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState('');
 
+  const [maxPlayers, setMaxPlayers] = useState(6);
   const [kickConfirm, setKickConfirm] = useState(null); // { id, username } | null
 
   // Chat state
@@ -29,14 +30,18 @@ export default function Lobby({ playerInfo, roomCode, isSpectator, onGameStart, 
     const handleConnect = () => setPlayers(prev => [...prev]);
     socket.on('connect', handleConnect);
 
-    socket.on('room_update', ({ players, spectators, hostId }) => {
-      console.log('Lobby Update:', { players, hostId });
+    socket.on('room_update', ({ players, spectators, hostId, maxPlayers: serverMaxPlayers }) => {
+      console.log('Lobby Update:', { players, hostId, serverMaxPlayers });
       setPlayers(players);
       setSpectators(spectators || []);
       setHostId(hostId);
+      if (serverMaxPlayers) setMaxPlayers(serverMaxPlayers);
     });
     socket.on('question_start', (data) => onGameStart(data));
     socket.on('error', ({ message }) => setError(message));
+
+    // Request initial state in case we missed the broadcast during transition
+    socket.emit('get_room_state', { roomCode });
 
     // Chat listener
     socket.on('lobby_chat', (msg) => {
@@ -49,7 +54,7 @@ export default function Lobby({ playerInfo, roomCode, isSpectator, onGameStart, 
       socket.off('error');
       socket.off('lobby_chat');
     };
-  }, [onGameStart]);
+  }, [onGameStart, roomCode, onLeave]);
 
   // Auto-scroll chat to bottom
   useEffect(() => {
@@ -94,7 +99,7 @@ export default function Lobby({ playerInfo, roomCode, isSpectator, onGameStart, 
     setKickConfirm(null);
   };
 
-  const emptySlotCount = Math.max(0, MAX_PLAYERS - players.length);
+  const emptySlotCount = Math.max(0, maxPlayers - players.length);
 
   return (
     <div className="lobby-page">
@@ -164,7 +169,7 @@ export default function Lobby({ playerInfo, roomCode, isSpectator, onGameStart, 
           <div className="players-section">
             <div className="players-header">
               <span className="section-label">PEMAIN</span>
-              <span className="player-count">{players.length} / {MAX_PLAYERS}</span>
+              <span className="player-count">{players.length} / {maxPlayers}</span>
             </div>
             <div className="players-grid">
               {players.map((p) => {
@@ -185,6 +190,7 @@ export default function Lobby({ playerInfo, roomCode, isSpectator, onGameStart, 
                         {p.username} {isMe && '(Kamu)'}
                       </span>
                       {isPlayerHost && <span className="host-badge">HOST</span>}
+                      {p.isGuest === false && <span className="host-badge" style={{ background: 'gold', color: 'black' }}>PRO</span>}
                     </div>
                     {/* Host kick button */}
                     {isHost && !isMe && (
