@@ -23,6 +23,8 @@ export default function App() {
   const [playerInfo, setPlayerInfo] = useState({ username: '', avatarId: 'pingo' });
   const [roomCode, setRoomCode] = useState('');
   const [leaderboard, setLeaderboard] = useState([]);
+  // Capture question_start data that arrives while Lobby→Game transition is happening
+  const [initialQuestion, setInitialQuestion] = useState(null);
 
   // Smooth page transition: fade-out → swap → fade-in
   const goTo = (nextPage) => {
@@ -67,7 +69,10 @@ export default function App() {
           <Lobby
             playerInfo={playerInfo}
             roomCode={roomCode}
-            onGameStart={() => goTo('game')}
+            onGameStart={(questionData) => {
+              setInitialQuestion(questionData);
+              goTo('game');
+            }}
             onLeave={() => goTo('home')}
           />
         )}
@@ -77,7 +82,9 @@ export default function App() {
           <Game
             playerInfo={playerInfo}
             roomCode={roomCode}
+            initialQuestion={initialQuestion}
             onGameOver={(lb) => {
+              setInitialQuestion(null);
               setLeaderboard(lb);
               goTo('result');
             }}

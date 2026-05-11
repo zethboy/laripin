@@ -50,7 +50,7 @@ function playCorrectSound() {
     [523, 0.00, 0.12, 0.9],  // C5
     [659, 0.10, 0.12, 0.8],  // E5
     [784, 0.20, 0.25, 1.0],  // G5
-    [1047,0.32, 0.35, 0.7],  // C6
+    [1047, 0.32, 0.35, 0.7],  // C6
   ], 'sine');
 }
 
@@ -139,7 +139,7 @@ function CountdownOverlay({ onDone }) {
       setTimeout(() => {
         // "GO!" with a fanfare burst
         setLabel('GO!');
-        playTones([[523,0,0.1],[659,0.08,0.1],[784,0.16,0.2],[1047,0.28,0.4,1.2]], 'sine');
+        playTones([[523, 0, 0.1], [659, 0.08, 0.1], [784, 0.16, 0.2], [1047, 0.28, 0.4, 1.2]], 'sine');
       }, 3000),
       setTimeout(() => onDone(), 3700),
     ];
@@ -161,7 +161,7 @@ function CountdownOverlay({ onDone }) {
 /* ============================================================
    Main Game component
    ============================================================ */
-export default function Game({ playerInfo, roomCode, onGameOver }) {
+export default function Game({ playerInfo, roomCode, initialQuestion, onGameOver }) {
   const [players, setPlayers] = useState([]);
   const [question, setQuestion] = useState(null);
   const [timeLeft, setTimeLeft] = useState(10);
@@ -178,8 +178,10 @@ export default function Game({ playerInfo, roomCode, onGameOver }) {
 
   const timerRef = useRef(null);
   const timerBarRef = useRef(null);
-  const tickFiredRef = useRef(false); // prevent multiple tick sounds per second
+  const tickFiredRef = useRef(false);
   const prevTimeLeft = useRef(timeLeft);
+  // Store timer duration when question_start arrives so countdown callback can use it
+  const pendingTimerDuration = useRef(10);
 
   /* ── Tick sound when timer hits urgent zone ── */
   useEffect(() => {
@@ -193,11 +195,17 @@ export default function Game({ playerInfo, roomCode, onGameOver }) {
   useEffect(() => {
     socket.on('room_update', ({ players }) => {
       setPlayers(players);
-      const initLanes = {};
-      const initAnims = {};
-      players.forEach(p => { initLanes[p.id] = null; initAnims[p.id] = 'idle'; });
-      setLanes(initLanes);
-      setAnimStates(initAnims);
+      // Only init lanes/animStates for NEW players (don't wipe existing positions)
+      setLanes(prev => {
+        const next = { ...prev };
+        players.forEach(p => { if (!(p.id in next)) next[p.id] = null; });
+        return next;
+      });
+      setAnimStates(prev => {
+        const next = { ...prev };
+        players.forEach(p => { if (!(p.id in next)) next[p.id] = 'idle'; });
+        return next;
+      });
     });
 
     socket.on('question_start', ({ statement, category, questionIndex, total, timer }) => {
@@ -205,16 +213,15 @@ export default function Game({ playerInfo, roomCode, onGameOver }) {
       setQuestionIndex(questionIndex);
       setTotalQuestions(total);
       setTimeLeft(timer);
+      pendingTimerDuration.current = timer;
       setAnswered(false);
       setMyChoice(null);
       setResult(null);
       setPhase('playing');
       setFloatingReaction(null);
 
-      // Show countdown overlay only before the very first question
       if (questionIndex === 0) {
         setShowCountdown(true);
-        // Timer bar will start after countdown is dismissed
       } else {
         startTimerBar(timer);
         startLocalTimer(timer);
@@ -274,6 +281,40 @@ export default function Game({ playerInfo, roomCode, onGameOver }) {
     };
   }, []);
 
+  /* ── Process initialQuestion on mount (question #0 captured before Game mounted) ── */
+  useEffect(() => {
+    if (!initialQuestion) return;
+    const { statement, category, questionIndex, total, timer, players: initPlayers } = initialQuestion;
+    setQuestion({ statement, category });
+    setQuestionIndex(questionIndex ?? 0);
+    setTotalQuestions(total ?? 10);
+    setTimeLeft(timer ?? 10);
+    pendingTimerDuration.current = timer ?? 10;
+    setAnswered(false);
+    setMyChoice(null);
+    setResult(null);
+    setPhase('playing');
+    setFloatingReaction(null);
+
+    if (questionIndex === 0) {
+      setShowCountdown(true);
+    } else {
+      startTimerBar(timer ?? 10);
+      startLocalTimer(timer ?? 10);
+    }
+
+    // Init lanes for any players already known
+    if (initPlayers && initPlayers.length > 0) {
+      const lanes = {};
+      const anims = {};
+      initPlayers.forEach(p => { lanes[p.id] = null; anims[p.id] = 'idle'; });
+      setLanes(lanes);
+      setAnimStates(anims);
+      setPlayers(initPlayers);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   /* ── Timer helpers ── */
   const startTimerBar = useCallback((duration) => {
     if (timerBarRef.current) {
@@ -301,25 +342,21 @@ export default function Game({ playerInfo, roomCode, onGameOver }) {
   /* Called when countdown "3-2-1-GO" finishes */
   const handleCountdownDone = useCallback(() => {
     setShowCountdown(false);
-    // Now start the real timer for question #0
-    setTimeLeft(prev => {
-      startTimerBar(prev);
-      startLocalTimer(prev);
-      return prev;
-    });
+    // Use the stored duration (set when question_start was received)
+    const dur = pendingTimerDuration.current;
+    startTimerBar(dur);
+    startLocalTimer(dur);
   }, [startTimerBar, startLocalTimer]);
 
   /* ── Answer handler ── */
   const handleAnswer = (choice) => {
-    if (answered || phase !== 'playing') return;
+    // Block if time is up (phase changed to result) — but allow re-answering during playing
+    if (phase !== 'playing' || timeLeft <= 0) return;
+    // If same lane clicked again, do nothing
+    if (myChoice === choice) return;
     setAnswered(true);
     setMyChoice(choice);
     socket.emit('player_answer', { roomCode, answer: choice });
-
-    // Show floating reaction (will be updated when result arrives)
-    // For now just show a lock icon
-    setFloatingReaction('🔒');
-    setTimeout(() => setFloatingReaction(null), 1200);
   };
 
   /* Update floating reaction when result arrives for my answer */
@@ -429,10 +466,10 @@ export default function Game({ playerInfo, roomCode, onGameOver }) {
             <button
               id="btn-benar"
               className={`btn-primary btn-benar
-                ${answered && myChoice === true ? 'btn-flash-benar' : ''}
-                ${answered ? 'btn-answered' : ''}`}
+                ${myChoice === true ? 'btn-flash-benar' : ''}
+                ${myChoice === true ? 'btn-answered' : ''}`}
               onClick={() => handleAnswer(true)}
-              disabled={answered || phase === 'result'}
+              disabled={phase === 'result' || timeLeft <= 0}
               aria-label="Jawab Benar"
             >
               ✓ BENAR
@@ -447,10 +484,10 @@ export default function Game({ playerInfo, roomCode, onGameOver }) {
             <button
               id="btn-salah"
               className={`btn-primary btn-salah
-                ${answered && myChoice === false ? 'btn-flash-salah' : ''}
-                ${answered ? 'btn-answered' : ''}`}
+                ${myChoice === false ? 'btn-flash-salah' : ''}
+                ${myChoice === false ? 'btn-answered' : ''}`}
               onClick={() => handleAnswer(false)}
-              disabled={answered || phase === 'result'}
+              disabled={phase === 'result' || timeLeft <= 0}
               aria-label="Jawab Salah"
             >
               ✗ SALAH
@@ -459,8 +496,8 @@ export default function Game({ playerInfo, roomCode, onGameOver }) {
         </div>
       </div>
 
-      {answered && phase === 'playing' && (
-        <div className="answered-msg">Jawabanmu sudah terkunci! 🔒</div>
+      {answered && phase === 'playing' && timeLeft > 0 && (
+        <div className="answered-msg">Sudah memilih — bisa ganti selagi waktu masih ada! ↔️</div>
       )}
 
       {/* ── "Next question coming..." — shown while waiting after result ── */}

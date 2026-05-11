@@ -82,11 +82,28 @@ module.exports = function setupGameHandlers(io) {
 
       room.status = 'playing';
       room.currentQuestionIndex = 0;
-      // BUG 1 FIX: delay first question by 800ms so all clients finish
-      // transitioning from Lobby → Game and register their socket listeners.
+      // Delay first question by 1200ms — gives time for the page transition (250ms)
+      // + React mount + socket listener registration before question_start fires
       setTimeout(() => {
         sendQuestion(io, room);
-      }, 800);
+      }, 1200);
+    });
+
+    // LOBBY CHAT
+    socket.on('lobby_chat', ({ roomCode, message }) => {
+      const room = rooms[roomCode];
+      if (!room || room.status !== 'waiting') return;
+      const player = room.players.find(p => p.id === socket.id);
+      if (!player) return;
+      const trimmed = String(message).trim().slice(0, 200);
+      if (!trimmed) return;
+      io.to(roomCode).emit('lobby_chat', {
+        id: socket.id,
+        username: player.username,
+        avatarId: player.avatarId,
+        message: trimmed,
+        ts: Date.now(),
+      });
     });
 
     // PLAYER ANSWER
@@ -95,8 +112,9 @@ module.exports = function setupGameHandlers(io) {
       if (!room || room.status !== 'playing') return;
 
       const player = room.players.find(p => p.id === socket.id);
-      if (!player || player.answered) return; // LOCKED — ignore duplicate
+      if (!player) return;
 
+      // Allow re-answering (change lane) as long as the question timer is still running
       player.answered = true;
       player.lastAnswer = answer;
       player.choseLane = answer ? 'benar' : 'salah';
@@ -109,10 +127,7 @@ module.exports = function setupGameHandlers(io) {
         choseLane: player.choseLane,
       });
 
-      // BUG 3 FIX: do NOT resolve early when all players answer.
-      // Let the 10-second timer run to completion naturally so the
-      // correct answer is only revealed when time is up (Kahoot-style).
-      // player_moved already broadcast lane movement above — that's enough.
+      // Timer runs to completion — correct answer revealed only when time is up.
     });
 
     // DISCONNECT
@@ -153,6 +168,7 @@ function sendQuestion(io, room) {
     questionIndex: room.currentQuestionIndex,
     total: room.questions.length,
     timer: 10,
+    players: room.players.map(p => ({ id: p.id, username: p.username, avatarId: p.avatarId, score: p.score })),
   });
 
   // Broadcast room update so lanes reset
